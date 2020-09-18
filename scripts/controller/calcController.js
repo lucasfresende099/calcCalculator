@@ -2,6 +2,8 @@ class CalcController{
  
     constructor(){
 
+        this._audio = new Audio('click.mp3')
+        this._audioOnOff = false
         this._lastOperator = ''
         this._lastNumber = ''
  
@@ -15,8 +17,32 @@ class CalcController{
         this.initButtonsEvents()// Função de eventos dos botões
         this.initKeyboard()
         
- 
     }
+    //metodo de ctrlv
+    pasteFromClipboard(){
+
+        document.addEventListener('paste', e=>{
+            
+            let text = e.clipboardData.getData('Text')
+            this.displayCalc = parseFloat(text)
+            
+        })
+    }
+    // metodo de ctrlc
+    copyToClipboard(){
+        
+        let input = document.createElement('input')
+        input.value = this.displayCalc
+
+        document.body.appendChild(input)
+
+        input.select()
+
+        document.execCommand('Copy')
+
+        input.remove()
+    }
+ 
     //Função de inicialização - Principal
     initialize(){
         
@@ -26,11 +52,45 @@ class CalcController{
         }, 1000)
 
         this.setLastNumberToDisplay()
+        this.pasteFromClipboard()
+
+        //apertar o botao para soltar o audio
+        document.querySelectorAll('.btn-ac').forEach(btn=>{
+            btn.addEventListener('dblclick', e =>{
+
+                this.toggleAudio()
+            })
+        })
     }
 
+    //metodo de acionar o audio 
+    toggleAudio(){
+        
+        this._audioOnOff = !this._audioOnOff
+       // formas alternativas de fazer o if
+       // this._audioOnOff = (this._audioOnOff) ? false : true
+        /*if(this.audioOnOff){
+            this._audioOnOff = false
+        } else{
+            this._audioOnOff = true
+        }
+        */
+    }
+  
+    //metodo de sair o audio
+    playAudio(){
+        if (this._audioOnOff){
+            
+            this._audio.currentTime = 0
+            this._audio.play()
+        }
+
+    }
+   // metodo para usar o teclado
     initKeyboard(){
  
         document.addEventListener('keyup', e=>{
+            this.playAudio()
 
             switch(e.key){
                 case'Escape':
@@ -65,6 +125,9 @@ class CalcController{
                 case '8':
                 case '9':
                     this.addOperation(parseInt(e.key))    
+                    break
+                case 'c':
+                    if(e.ctrlKey) this.copyToClipboard()
                     break
             }
         })
@@ -116,7 +179,15 @@ class CalcController{
     }
 
     getResult(){
-        return eval(this._operation.join(''))
+        try{
+            return eval(this._operation.join(''))
+        } catch(e){
+            //tempo de resposta antes me mostrar o resultado final para mostrar o erro.
+            setTimeout(() =>{
+                this.setError() 
+            },1)
+        }
+        
     }
     calc(){
 
@@ -234,6 +305,8 @@ class CalcController{
     }
     //Método de executar um botão
     execBtn(value){
+        this.playAudio()
+
         switch(value){
             case'ac':
                 this.clearAll()
@@ -334,6 +407,11 @@ class CalcController{
         return this._displayCalcEl.innerHTML
     }
     set displayCalc(value){
+
+        if(value.toString().length > 10){
+            this.setError()
+            return false
+        }
         this._displayCalcEl.innerHTML = value
     }
  
